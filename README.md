@@ -2,6 +2,8 @@
 
 Full-stack e-commerce platform with AI-powered features. Built with Spring Boot and React, using Google Gemini for product description generation, image generation, and a RAG-based chatbot.
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-ecom.ignalarcon.dev-blue?style=for-the-badge)](https://ecom.ignalarcon.dev)
+
 ## Features
 
 - **Product Management** — CRUD operations with image upload
