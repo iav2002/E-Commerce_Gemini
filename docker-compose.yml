@@ -29,11 +29,9 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-0076}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-	GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-key.json  
-	
+      GOOGLE_APPLICATION_CREDENTIALS: /app/gcp-key.json
     volumes:
-      - ./gcp-key.json:/app/gcp-key.json:ro     
-
+      - ./gcp-key.json:/app/gcp-key.json:ro
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +42,7 @@ services:
       context: ./t-ecom
       dockerfile: Dockerfile
       args:
-        VITE_BASE_URL: http://localhost:8080
+        VITE_BASE_URL: http://16.16.177.4:8080
     ports:
       - "3000:80"
     depends_on:
