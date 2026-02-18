@@ -1,134 +1,173 @@
 # SpringEcomAI
 
-E-commerce platform with AI-powered features built with Spring Boot and Google Gemini.
+Full-stack e-commerce platform with AI-powered features. Built with Spring Boot and React, using Google Gemini for product description generation, image generation, and a RAG-based chatbot.
 
-## Tech Stack
+## Features
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Spring Boot 3.5.10, Java 21 |
-| AI (Chat & Descriptions) | Spring AI 1.1.1 → Google Gemini 2.0 Flash |
-| AI (Image Generation) | Google GenAI SDK → Gemini 2.5 Flash Image |
-| AI (Embeddings) | Google text-embedding-004 via Vertex AI |
-| Vector Store | PostgreSQL 17 + pgvector |
-| ORM | Spring Data JPA / Hibernate |
-| Frontend | React (separate project) |
+- **Product Management** — CRUD operations with image upload
+- **AI Description Generator** — generates product descriptions from name and category using Gemini 2.0 Flash
+- **AI Image Generator** — creates product images using Gemini 2.5 Flash Image
+- **RAG Chatbot** — answers questions about products and orders using semantic search over a vector store
+- **Order System** — place orders with automatic stock management
+- **Search** — keyword-based product search
 
-## Architecture Overview
+## Architecture
 
 ```mermaid
 graph TB
-    subgraph Frontend
-        React[React App]
+    subgraph Client["Frontend (React + Vite)"]
+        UI[React App]
+        Cart[Cart — localStorage]
     end
 
-    subgraph Backend["Spring Boot Backend"]
-        Controllers[REST Controllers]
-        ProductSvc[ProductService]
-        ChatBotSvc[ChatBotService]
-        OrderSvc[OrderService]
-        ImageGenSvc[AiImageGeneratorService]
+    subgraph Server["Backend (Spring Boot 3.5)"]
+        API[REST API]
+        Services[Services Layer]
+        SpringAI[Spring AI 1.1]
+        GenAISDK[Google GenAI SDK]
     end
 
     subgraph AI["Google Gemini"]
-        Chat[Gemini 2.0 Flash<br/>Chat Model]
-        Embed[text-embedding-004<br/>Embedding Model]
-        ImageGen[Gemini 2.5 Flash Image<br/>Image Generation]
+        Chat[Gemini 2.0 Flash — Chat]
+        Embed[text-embedding-004 — Embeddings]
+        ImageGen[Gemini 2.5 Flash Image]
     end
 
-    subgraph Database["PostgreSQL 17"]
-        Tables[(Products, Orders)]
-        VectorStore[(pgvector<br/>vector_store)]
+    subgraph DB["PostgreSQL 17"]
+        Tables[(Products · Orders)]
+        Vectors[(pgvector — Vector Store)]
     end
 
-    React -- REST API --> Controllers
-    Controllers --> ProductSvc
-    Controllers --> ChatBotSvc
-    Controllers --> OrderSvc
-    ProductSvc --> Chat
-    ProductSvc --> ImageGenSvc
-    ImageGenSvc --> ImageGen
-    ChatBotSvc --> Embed
-    ChatBotSvc --> Chat
-    ChatBotSvc --> VectorStore
-    ProductSvc --> Tables
-    ProductSvc --> VectorStore
-    OrderSvc --> Tables
-    OrderSvc --> VectorStore
+    UI -- "HTTP/REST" --> API
+    API --> Services
+    Services --> SpringAI
+    Services --> GenAISDK
+    SpringAI --> Chat
+    SpringAI --> Embed
+    GenAISDK --> ImageGen
+    Embed --> Vectors
+    Services --> Tables
+
+    style Client fill:#e8f4f8,stroke:#2980b9
+    style Server fill:#fef9e7,stroke:#f39c12
+    style AI fill:#f9ebea,stroke:#e74c3c
+    style DB fill:#eafaf1,stroke:#27ae60
 ```
 
-## RAG Chatbot Flow
+## How the AI Features Work
 
-The chatbot uses Retrieval-Augmented Generation (RAG) to answer questions about products and orders using real data from the database.
+### RAG Chatbot
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant ChatBotController
-    participant ChatBotService
-    participant EmbeddingModel
-    participant PgVectorStore
-    participant GeminiChat
+    participant React
+    participant Backend
+    participant Embeddings
+    participant VectorStore
+    participant Gemini
 
-    User->>ChatBotController: GET /api/chat/ask?message=...
-    ChatBotController->>ChatBotService: getBotResponse(userQuery)
-
-    Note over ChatBotService: 1. Semantic Search
-    ChatBotService->>EmbeddingModel: Embed user query
-    EmbeddingModel->>PgVectorStore: Similarity search (top 5, threshold 0.7)
-    PgVectorStore-->>ChatBotService: Matching documents (products, orders)
-
-    Note over ChatBotService: 2. Build Prompt
-    ChatBotService->>ChatBotService: Load prompt template<br/>Inject context + user query
-
-    Note over ChatBotService: 3. Generate Response
-    ChatBotService->>GeminiChat: Send augmented prompt
-    GeminiChat-->>ChatBotService: AI response
-    ChatBotService-->>User: Grounded answer
+    User->>React: "Do you have laptops in stock?"
+    React->>Backend: GET /api/chat/ask?message=...
+    Backend->>Embeddings: Embed user query (768 dims)
+    Embeddings->>VectorStore: Similarity search (top 5)
+    VectorStore-->>Backend: Matching product/order docs
+    Backend->>Backend: Build prompt with context
+    Backend->>Gemini: Augmented prompt
+    Gemini-->>React: Grounded response
+    React-->>User: Display answer
 ```
 
-### How Data Gets Into the Vector Store
-
-Products and orders are automatically embedded and stored when created or updated:
+### AI Product Creation
 
 ```mermaid
 flowchart LR
-    A[Product Created/Updated] --> B[Format as text document]
-    B --> C[Generate embedding via text-embedding-004]
-    C --> D[Store in pgvector]
-
-    E[Order Placed] --> F[Format order summary]
-    F --> G[Generate embedding]
-    G --> D
-
-    E --> H[Update product stock]
-    H --> I[Re-embed updated product]
-    I --> D
+    A[User enters name + category] --> B["Generate Description — Gemini 2.0 Flash"]
+    B --> C[User reviews/edits description]
+    C --> D["Generate Image — Gemini 2.5 Flash Image"]
+    D --> E[User previews image]
+    E --> F[Submit product]
+    F --> G[Save to DB + Embed in vector store]
 ```
 
-## AI Image Generation Flow
+## Project Structure
 
-Image generation uses the Google GenAI SDK directly (not Spring AI) to call the Gemini 2.5 Flash Image model.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant ProductController
-    participant ProductService
-    participant AiImageGeneratorService
-    participant GeminiImageAPI
-
-    User->>ProductController: POST /api/product/generate-image
-    Note right of User: params: name, category, description
-    ProductController->>ProductService: generateImage(name, category, description)
-    ProductService->>ProductService: Build detailed image prompt<br/>(studio lighting, white bg, no logos...)
-    ProductService->>AiImageGeneratorService: generateImage(prompt)
-    AiImageGeneratorService->>GeminiImageAPI: generateContent("gemini-2.5-flash-image", prompt)
-    Note over GeminiImageAPI: responseModalities: TEXT, IMAGE
-    GeminiImageAPI-->>AiImageGeneratorService: Response with inline image data
-    AiImageGeneratorService->>AiImageGeneratorService: Extract byte[] from inlineData
-    AiImageGeneratorService-->>User: Raw image bytes
 ```
+.
+├── README.md                ← You are here
+├── docker-compose.yml       ← Run everything locally
+├── SpringEcomAI/            ← Backend (Spring Boot)
+│   ├── Dockerfile
+│   ├── README.md
+│   └── src/
+└── t-ecom/                  ← Frontend (React)
+    ├── Dockerfile
+    ├── nginx.conf
+    ├── README.md
+    └── src/
+```
+
+See [Backend README](./SpringEcomAI/README.md) and [Frontend README](./t-ecom/README.md) for details on each.
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Frontend | React 18, Vite 7, Bootstrap 5 |
+| Backend | Spring Boot 3.5, Java 21, Spring AI 1.1 |
+| AI Chat & Descriptions | Google Gemini 2.0 Flash |
+| AI Image Generation | Google GenAI SDK → Gemini 2.5 Flash Image |
+| Embeddings | Google text-embedding-004 (768 dims) |
+| Database | PostgreSQL 17 + pgvector |
+| Containerization | Docker + Nginx |
+
+## Quick Start
+
+### Prerequisites
+
+- Java 21+
+- Node.js 18+
+- PostgreSQL 17 with pgvector extension
+- Google Cloud project with Gemini API key and Vertex AI enabled
+
+### Run with Docker Compose
+
+```bash
+# Set your API key
+export GEMINI_API_KEY=your_api_key_here
+
+# Start all services
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:8080 |
+| PostgreSQL | localhost:5432 |
+
+### Run Manually
+
+**Backend:**
+```bash
+cd SpringEcomAI
+mvn spring-boot:run
+```
+
+**Frontend:**
+```bash
+cd t-ecom
+npm install
+npm run dev
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GEMINI_API_KEY` | Google Gemini API key | Yes |
+| `DB_PASSWORD` | PostgreSQL password | Yes (Docker) |
+| `VITE_BASE_URL` | Backend URL for frontend | Yes |
 
 ## API Endpoints
 
@@ -138,8 +177,7 @@ sequenceDiagram
 |--------|----------|-------------|
 | `GET` | `/api/products` | List all products |
 | `GET` | `/api/product/{id}` | Get product by ID |
-| `GET` | `/api/product/{id}/image` | Get product image |
-| `POST` | `/api/product` | Add product (multipart: product + image) |
+| `POST` | `/api/product` | Add product (multipart) |
 | `PUT` | `/api/product/{id}` | Update product |
 | `DELETE` | `/api/product/{id}` | Delete product |
 | `GET` | `/api/products/search?keyword=` | Search products |
@@ -148,8 +186,8 @@ sequenceDiagram
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/product/generate-description?name=&category=` | Generate AI product description |
-| `POST` | `/api/product/generate-image?name=&category=&description=` | Generate AI product image |
+| `POST` | `/api/product/generate-description` | AI product description |
+| `POST` | `/api/product/generate-image` | AI product image |
 | `GET` | `/api/chat/ask?message=` | RAG chatbot |
 
 ### Orders
@@ -159,39 +197,6 @@ sequenceDiagram
 | `POST` | `/api/orders/place` | Place an order |
 | `GET` | `/api/orders` | List all orders |
 
-## Setup
+## Author
 
-### Prerequisites
-
-- Java 21+
-- PostgreSQL 17 with pgvector extension
-- Google Cloud project with:
-    - Gemini API key ([AI Studio](https://aistudio.google.com/apikey))
-    - Vertex AI API enabled
-    - Billing account linked
-
-### Configuration
-
-```properties
-# Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/local
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-
-# Google Gemini AI
-spring.ai.google.genai.api-key=YOUR_API_KEY
-spring.ai.google.genai.project-id=YOUR_GCP_PROJECT_ID
-spring.ai.google.genai.embedding.project-id=YOUR_GCP_PROJECT_ID
-spring.ai.google.genai.embedding.location=us-central1
-spring.ai.google.genai.chat.options.model=gemini-2.0-flash
-spring.ai.google.genai.embedding.options.model=text-embedding-004
-```
-
-### Run
-
-```bash
-chmod +x mvnw
-./mvnw spring-boot:run
-```
-
-The backend starts on `http://localhost:8080`.
+[Ignacio Alarcón Varela](https://ignalarcon.dev/)

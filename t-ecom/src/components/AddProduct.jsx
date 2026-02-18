@@ -435,7 +435,7 @@ const AddProduct = () => {
                 <div className="col-md-4">
                   <label htmlFor="price" className="form-label fw-bold">Price</label>
                   <div className="input-group">
-                    <span className="input-group-text">Rs</span>
+                    <span className="input-group-text"> € </span>
                     <input
                       type="number"
                       className={`form-control ${validated ? (errors.price ? 'is-invalid' : 'is-valid') : ''}`}

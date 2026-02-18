@@ -48,9 +48,9 @@ const Order = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat('en-IE', {
       style: 'currency',
-      currency: 'INR',
+      currency: 'EUR',
       maximumFractionDigits: 2
     }).format(amount);
   };

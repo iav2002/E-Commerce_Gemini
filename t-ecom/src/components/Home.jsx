@@ -141,7 +141,7 @@ const Home = ({ selectedCategory }) => {
                         <hr />
                         <div className="mt-auto">
                           <h5 className="mb-2 fw-bold">
-                            <i className="bi bi-currency-rupee"></i>{price}
+                             €{price} 
                           </h5>
                           <button
                             className="btn btn-primary w-100"

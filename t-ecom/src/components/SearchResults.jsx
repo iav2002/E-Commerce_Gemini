@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import unplugged from "../assets/unplugged.png";
 
 const SearchResults = () => {
   const location = useLocation();
@@ -91,7 +92,7 @@ const SearchResults = () => {
                         ? product.description.substring(0, 100) + "..."
                         : product.description}
                     </p>
-                    <h5 className="card-text text-primary mt-auto mb-3">₹{product.price.toLocaleString('en-IN')}</h5>
+                    <h5 className="card-text text-primary mt-auto mb-3">€{product.price.toLocaleString('en-IE')}</h5>
                     <div className="d-flex justify-content-between mt-auto">
                       <button 
                         className="btn btn-outline-primary btn-sm"

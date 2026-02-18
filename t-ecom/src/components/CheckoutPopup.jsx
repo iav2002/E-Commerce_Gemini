@@ -2,6 +2,7 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { Modal, Button, Form, Alert, Toast, ToastContainer } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import unplugged from "../assets/unplugged.png";
 
 const CheckoutPopup = ({ show, handleClose, cartItems, totalPrice }) => {
   const baseUrl = import.meta.env.VITE_BASE_URL;
@@ -98,13 +99,13 @@ const CheckoutPopup = ({ show, handleClose, cartItems, totalPrice }) => {
                   <div className="flex-grow-1">
                     <h6 className="mb-1">{item.name}</h6>
                     <p className="mb-1 small">Quantity: {item.quantity}</p>
-                    <p className="mb-0 small">Price: ₹{(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="mb-0 small">Price:  €{(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
 
               <div className="text-center my-4">
-                <h5 className="fw-bold">Total: ₹{totalPrice.toFixed(2)}</h5>
+                <h5 className="fw-bold">Total: €{totalPrice.toFixed(2)}</h5>
               </div>
 
               <Form.Group className="mb-3">
