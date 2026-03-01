@@ -2,6 +2,7 @@ services:
   # PostgreSQL with pgvector
   db:
     image: pgvector/pgvector:pg17
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ignacio
       POSTGRES_USER: postgres
@@ -19,6 +20,7 @@ services:
 
   # Spring Boot Backend
   backend:
+    restart: unless-stopped
     build:
       context: ./SpringEcomAI
       dockerfile: Dockerfile
@@ -38,13 +40,17 @@ services:
 
   # React Frontend (Nginx)
   frontend:
+    restart: unless-stopped
     build:
       context: ./t-ecom
       dockerfile: Dockerfile
       args:
-        VITE_BASE_URL: http://16.16.177.4:8080
+        VITE_BASE_URL: ""
     ports:
-      - "3000:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
 
